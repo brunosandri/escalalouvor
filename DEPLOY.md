@@ -33,11 +33,12 @@ Não é necessário cadastrar `PORT`: o Railway fornece essa variável automatic
 
 ## Verificação após publicar
 
-- Abrir uma escala e alternar entre mapa e lista.
+- Abrir o link sem login e confirmar que a escala aparece em modo de visualização.
+- Conferir que o mapa cabe inteiro na largura de um iPhone, sem rolagem lateral.
+- Entrar como líder e confirmar que os controles de edição aparecem.
 - Criar uma escala de teste e salvá-la.
-- Entrar no Supabase pelo cadastro do repertório.
 - Enviar um PDF e um MP3 pequenos.
-- Abrir a cifra e reproduzir o VS no seletor de músicas.
+- Abrir a cifra no Safari e reproduzir o VS no seletor de músicas.
 - Testar o envio da mensagem pelo WhatsApp em um celular.
 
-> Atenção: o esquema central está preparado em `supabase/schema.sql`, mas o aplicativo ainda persiste os cadastros no armazenamento local. A próxima etapa é conectar as operações da interface às novas tabelas e exigir autenticação geral.
+> A visualização usa acesso anônimo somente de leitura. As gravações continuam protegidas pelas políticas RLS e exigem uma conta de líder no Supabase Authentication.
