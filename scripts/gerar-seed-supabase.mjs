@@ -8,6 +8,7 @@ const db = JSON.parse(await readFile(source, "utf8"));
 
 const quote = value => value == null ? "null" : `'${String(value).replaceAll("'", "''")}'`;
 const json = value => `${quote(JSON.stringify(value ?? {}))}::jsonb`;
+const DEFAULT_AVATAR = {pele:"#f0bd89",cabelo:"#171817"};
 const cleanRole = role => role === "Transmissão" ? "Mesa de corte" : role;
 const rows = (items, columns, values, conflict) => {
   if (!items.length) return "";
@@ -15,7 +16,7 @@ const rows = (items, columns, values, conflict) => {
   return `insert into ${columns}\nvalues\n${tuples}\n${conflict};\n`;
 };
 
-const members = db.membros.map(member => ({...member, funcoes:[...new Set((member.funcoes||[]).map(cleanRole).filter(role=>role!=="Percussão"))]}));
+const members = db.membros.map(member => ({...member,avatar:{...DEFAULT_AVATAR,...(member.avatar||{})},funcoes:[...new Set((member.funcoes||[]).map(cleanRole).filter(role=>role!=="Percussão"))]}));
 const scales = db.escalas.map(scale => ({...scale,equipe:(scale.equipe||[]).map(item=>({...item,funcao:cleanRole(item.funcao)})).filter(item=>item.funcao!=="Percussão")}));
 
 const memberRows = rows(members,"public.membros (id, nome, whatsapp, avatar)",m=>[quote(m.id),quote(m.nome),quote(m.whatsapp||""),json(m.avatar)],"on conflict (id) do update set nome=excluded.nome, whatsapp=excluded.whatsapp, avatar=excluded.avatar");

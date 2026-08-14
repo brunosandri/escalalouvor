@@ -4,7 +4,7 @@ create table if not exists public.membros (
   id text primary key,
   nome text not null check (char_length(trim(nome)) between 2 and 120),
   whatsapp text not null default '',
-  avatar jsonb not null default '{}'::jsonb,
+  avatar jsonb not null default '{"pele":"#f0bd89","cabelo":"#171817"}'::jsonb,
   ativo boolean not null default true,
   criado_em timestamptz not null default now(),
   atualizado_em timestamptz not null default now()
