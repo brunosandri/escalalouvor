@@ -13,11 +13,16 @@ Serão criadas as tabelas:
 - `membros`
 - `membro_funcoes`
 - `musicas`
+- `musica_versoes` (cifra, VS, YouTube e observações separados por tom)
 - `escalas`
 - `escala_equipe`
 - `escala_repertorio`
 
 O script também cria relacionamentos, exclusões em cascata, índices, atualização automática de datas e políticas RLS. Usuários anônimos possuem somente leitura; usuários de **Authentication > Users** podem consultar e alterar.
+
+### Atualizar um banco que já está instalado
+
+Antes de publicar esta versão do aplicativo, execute uma vez o arquivo `supabase/ATUALIZAR-VERSOES-MUSICAS.sql` no SQL Editor. Ele preserva os cadastros atuais, transforma os arquivos antigos na versão do tom padrão e liga cada item das escalas ao tom correspondente.
 
 ## 2. Importar os cadastros atuais
 
@@ -70,7 +75,7 @@ Em **Authentication > Users**, adicione somente os líderes autorizados, cada um
 
 Copie `.env.example` para `.env.local` e preencha a URL e a chave publicável disponíveis em **Project Settings > API**. Nunca coloque a chave `service_role` no aplicativo.
 
-Depois, reinicie `npm run dev`. Entre como líder, abra **Repertório > Nova música**, escolha o PDF ou MP3 e salve o cadastro. O upload preenche automaticamente o link público correspondente.
+Depois, reinicie `npm run dev`. Entre como líder, abra **Repertório > Nova música**, adicione um ou mais tons e escolha o PDF ou MP3 de cada versão. O upload preenche automaticamente o link público do tom correspondente.
 
 Limites aplicados na interface: PDF até 15 MB e MP3 até 50 MB.
 

@@ -35,6 +35,20 @@ create table if not exists public.musicas (
   atualizado_em timestamptz not null default now()
 );
 
+create table if not exists public.musica_versoes (
+  id text primary key,
+  musica_id text not null references public.musicas(id) on update cascade on delete cascade,
+  tom text not null default '',
+  youtube_url text not null default '',
+  cifra_url text not null default '',
+  vs_url text not null default '',
+  observacoes text not null default '',
+  ativo boolean not null default true,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  unique (musica_id, tom)
+);
+
 create table if not exists public.escalas (
   id text primary key,
   data date not null,
@@ -58,14 +72,17 @@ create table if not exists public.escala_repertorio (
   id text primary key,
   escala_id text not null references public.escalas(id) on update cascade on delete cascade,
   musica_id text not null references public.musicas(id) on update cascade on delete restrict,
+  versao_id text references public.musica_versoes(id) on update cascade on delete restrict,
   tom text not null default '',
   momento text not null default 'Louvor',
+  observacoes text not null default '',
   ordem smallint not null default 0 check (ordem >= 0),
   unique (escala_id, ordem)
 );
 
 create index if not exists membro_funcoes_funcao_idx on public.membro_funcoes(funcao);
 create index if not exists musicas_titulo_idx on public.musicas(lower(titulo));
+create index if not exists musica_versoes_musica_tom_idx on public.musica_versoes(musica_id, tom);
 create index if not exists escalas_data_idx on public.escalas(data);
 create index if not exists escala_equipe_escala_ordem_idx on public.escala_equipe(escala_id, ordem);
 create index if not exists escala_equipe_membro_idx on public.escala_equipe(membro_id);
@@ -92,6 +109,10 @@ drop trigger if exists musicas_atualizado_em on public.musicas;
 create trigger musicas_atualizado_em before update on public.musicas
 for each row execute function public.definir_atualizado_em();
 
+drop trigger if exists musica_versoes_atualizado_em on public.musica_versoes;
+create trigger musica_versoes_atualizado_em before update on public.musica_versoes
+for each row execute function public.definir_atualizado_em();
+
 drop trigger if exists escalas_atualizado_em on public.escalas;
 create trigger escalas_atualizado_em before update on public.escalas
 for each row execute function public.definir_atualizado_em();
@@ -99,6 +120,7 @@ for each row execute function public.definir_atualizado_em();
 alter table public.membros enable row level security;
 alter table public.membro_funcoes enable row level security;
 alter table public.musicas enable row level security;
+alter table public.musica_versoes enable row level security;
 alter table public.escalas enable row level security;
 alter table public.escala_equipe enable row level security;
 alter table public.escala_repertorio enable row level security;
@@ -106,6 +128,7 @@ alter table public.escala_repertorio enable row level security;
 grant select on table public.membros to anon;
 grant select on table public.membro_funcoes to anon;
 grant select on table public.musicas to anon;
+grant select on table public.musica_versoes to anon;
 grant select on table public.escalas to anon;
 grant select on table public.escala_equipe to anon;
 grant select on table public.escala_repertorio to anon;
@@ -113,6 +136,7 @@ grant select on table public.escala_repertorio to anon;
 grant select, insert, update, delete on table public.membros to authenticated;
 grant select, insert, update, delete on table public.membro_funcoes to authenticated;
 grant select, insert, update, delete on table public.musicas to authenticated;
+grant select, insert, update, delete on table public.musica_versoes to authenticated;
 grant select, insert, update, delete on table public.escalas to authenticated;
 grant select, insert, update, delete on table public.escala_equipe to authenticated;
 grant select, insert, update, delete on table public.escala_repertorio to authenticated;
@@ -125,6 +149,9 @@ create policy "Visualização pública de funções" on public.membro_funcoes fo
 
 drop policy if exists "Visualização pública de músicas" on public.musicas;
 create policy "Visualização pública de músicas" on public.musicas for select to anon using (true);
+
+drop policy if exists "Visualização pública de versões das músicas" on public.musica_versoes;
+create policy "Visualização pública de versões das músicas" on public.musica_versoes for select to anon using (true);
 
 drop policy if exists "Visualização pública de escalas" on public.escalas;
 create policy "Visualização pública de escalas" on public.escalas for select to anon using (true);
@@ -145,6 +172,10 @@ for all to authenticated using (true) with check (true);
 
 drop policy if exists "Usuários autenticados gerenciam músicas" on public.musicas;
 create policy "Usuários autenticados gerenciam músicas" on public.musicas
+for all to authenticated using (true) with check (true);
+
+drop policy if exists "Usuários autenticados gerenciam versões das músicas" on public.musica_versoes;
+create policy "Usuários autenticados gerenciam versões das músicas" on public.musica_versoes
 for all to authenticated using (true) with check (true);
 
 drop policy if exists "Usuários autenticados gerenciam escalas" on public.escalas;
@@ -334,6 +365,43 @@ values
   ('64p2g158', 'Música', '', '', 'É Ele', 'A', 'https://www.youtube.com/watch?v=L3b2gRB7YVc', '', '')
 on conflict (id) do update set tipo=excluded.tipo, hinario=excluded.hinario, numero=excluded.numero, titulo=excluded.titulo, tom_padrao=excluded.tom_padrao, youtube_url=excluded.youtube_url, cifra_url=excluded.cifra_url, vs_url=excluded.vs_url;
 
+insert into public.musica_versoes (id, musica_id, tom, youtube_url, cifra_url, vs_url, observacoes)
+values
+  ('v-rynnefj7', 'rynnefj7', '', '', '', '', ''),
+  ('v-bqcab69m', 'bqcab69m', 'A', 'https://www.youtube.com/watch?v=hFwNSQVi0q0', '', '', ''),
+  ('v-y29db8p5', 'y29db8p5', 'D', 'https://www.youtube.com/watch?v=WTcHSW43bt0', '', '', ''),
+  ('v-qfoeqh3a', 'qfoeqh3a', 'E', 'https://www.youtube.com/watch?v=wgnLn7_uzeU', '', '', ''),
+  ('v-hkqdlmtt', 'hkqdlmtt', 'D', 'https://www.youtube.com/watch?v=MeX0yHMs9Nk', '', '', ''),
+  ('v-s333h9mt', 's333h9mt', '', '', '', '', ''),
+  ('v-qa3e68f7', 'qa3e68f7', '', '', '', '', ''),
+  ('v-rdl1erbf', 'rdl1erbf', 'A', 'https://www.youtube.com/watch?v=Kms05Fz2WsI', '', '', ''),
+  ('v-v90ric7p', 'v90ric7p', 'D', 'https://www.youtube.com/watch?v=FFPiiZEzWJg', '', '', ''),
+  ('v-6mp6afqf', '6mp6afqf', 'A', 'https://www.youtube.com/watch?v=4x-yrCz1D9g', '', '', ''),
+  ('v-bofbcixg', 'bofbcixg', 'C', 'https://www.youtube.com/watch?v=fJ5jeyZSEmU', '', '', ''),
+  ('v-e4qeqpno', 'e4qeqpno', '', '', '', '', ''),
+  ('v-jc616i76', 'jc616i76', 'G', 'https://www.youtube.com/watch?v=Sb6NVzVcp0g', '', '', ''),
+  ('v-qzj865uf', 'qzj865uf', 'D', 'https://www.youtube.com/watch?v=2hNyoLlVHHU', '', '', ''),
+  ('v-z6tnovmi', 'z6tnovmi', 'G', 'https://www.youtube.com/watch?v=HMH5EnH2FvA', '', '', ''),
+  ('v-55zbka52', '55zbka52', '', '', '', '', ''),
+  ('v-qxi6rhxo', 'qxi6rhxo', '', '', '', '', ''),
+  ('v-ejvqtia4', 'ejvqtia4', '', '', '', '', ''),
+  ('v-vauvzhma', 'vauvzhma', '', '', '', '', ''),
+  ('v-d5rgn5s7', 'd5rgn5s7', '', '', '', '', ''),
+  ('v-f4bs3e62', 'f4bs3e62', '', 'https://www.youtube.com/watch?v=TfIuwktmISw', '', '', ''),
+  ('v-35ye4scm', '35ye4scm', '', '', '', '', ''),
+  ('v-wlavyf4r', 'wlavyf4r', 'Bb', 'https://www.youtube.com/watch?v=Ckfsn1KpHXY', '', '', ''),
+  ('v-jzczbtto', 'jzczbtto', 'G', 'https://www.youtube.com/watch?v=9iXjzpusq7M', '', '', ''),
+  ('v-kdfy6sps', 'kdfy6sps', 'G', 'https://www.youtube.com/watch?v=Hy6QJ6LJW2I', '', '', ''),
+  ('v-ztj0wyuh', 'ztj0wyuh', '', '', '', '', ''),
+  ('v-c3lkr2aq', 'c3lkr2aq', '', '', '', '', ''),
+  ('v-fqrclri1', 'fqrclri1', 'D', 'https://www.youtube.com/watch?v=sX0KVSex6lI', '', '', ''),
+  ('v-f7jyu5js', 'f7jyu5js', 'G', 'https://www.youtube.com/watch?v=NcSF8sgP84A', '', '', ''),
+  ('v-zwdiaeq1', 'zwdiaeq1', 'G', 'https://www.youtube.com/watch?v=JMV-K0d1QYQ', '', '', ''),
+  ('v-xv9upctn', 'xv9upctn', 'E', '', '', '', ''),
+  ('v-7ns26lrw', '7ns26lrw', 'E', 'https://www.youtube.com/watch?v=4gDi8FIJKHc', '', '', ''),
+  ('v-64p2g158', '64p2g158', 'A', 'https://www.youtube.com/watch?v=L3b2gRB7YVc', '', '', '')
+on conflict (musica_id, tom) do update set youtube_url=excluded.youtube_url, cifra_url=excluded.cifra_url, vs_url=excluded.vs_url, observacoes=excluded.observacoes, ativo=true;
+
 insert into public.escalas (id, data, culto, saudacao, ensaio, observacoes)
 values
   ('pt49zhkk', '2026-08-02', 'Culto da Família (dom 19h)', 'Bommm diaa', 'Ensaio no domingo após a EBD.', ''),
@@ -464,42 +532,42 @@ values
   ('rfw0h9ny', 'xbv932by', 'Câmera 2', 17)
 on conflict (escala_id, membro_id, funcao) do update set ordem=excluded.ordem;
 
-insert into public.escala_repertorio (id, escala_id, musica_id, tom, momento, ordem)
+insert into public.escala_repertorio (id, escala_id, musica_id, versao_id, tom, momento, observacoes, ordem)
 values
-  ('sqxezyex', 'pt49zhkk', 'fqrclri1', 'D', 'Louvor', 0),
-  ('1rdrgdsj', 'pt49zhkk', 'qzj865uf', 'D', 'Louvor', 1),
-  ('pr16umx1', 'pt49zhkk', 'rdl1erbf', 'A', 'Louvor', 2),
-  ('bz99nfd0', 'pt49zhkk', 'qxi6rhxo', '', 'Oferta', 3),
-  ('2is5d9ik', 'pt49zhkk', 'qa3e68f7', '', 'Batismo', 4),
-  ('40vstqqz', 'pt49zhkk', 'hkqdlmtt', 'D', 'Ceia', 5),
-  ('wt1fd4mx', 'qmevxrvc', '6mp6afqf', 'A', 'Louvor', 0),
-  ('82mux4b0', 'qmevxrvc', 'jzczbtto', 'G', 'Louvor', 1),
-  ('pzcyc3ed', 'qmevxrvc', 'ejvqtia4', '', 'Oferta', 2),
-  ('en659o2v', 'vd5rxi67', 'qfoeqh3a', 'E', 'Louvor', 0),
-  ('21i9mpfl', 'vd5rxi67', 'v90ric7p', 'D', 'Louvor', 1),
-  ('v9fupxqm', 'vd5rxi67', 'hkqdlmtt', 'D', 'Louvor', 2),
-  ('b0y07nyr', 'vd5rxi67', 'f4bs3e62', '', 'Oferta', 3),
-  ('nfrpyz21', '1hget7my', 'e4qeqpno', '', 'Abertura', 0),
-  ('tbic145a', '1hget7my', '7ns26lrw', 'E', 'Louvor', 1),
-  ('ez732pgo', '1hget7my', 'bqcab69m', 'A', 'Louvor', 2),
-  ('jj7g3f9c', '1hget7my', '64p2g158', 'A', 'Louvor', 3),
-  ('aioctiq7', '1hget7my', 'd5rgn5s7', '', 'Oferta', 4),
-  ('g43yq15i', '0ec498uk', 'f7jyu5js', 'G', 'Louvor', 0),
-  ('5latjpuu', '0ec498uk', 'jc616i76', 'G', 'Louvor', 1),
-  ('3xf6mzkp', '0ec498uk', 's333h9mt', '', 'Oferta', 2),
-  ('qoaa8t3r', 'n5mtmo3o', 'ztj0wyuh', '', 'Abertura', 0),
-  ('up47p9pb', 'n5mtmo3o', 'z6tnovmi', 'G', 'Louvor', 1),
-  ('0tdbm50f', 'n5mtmo3o', 'zwdiaeq1', 'G', 'Louvor', 2),
-  ('qo1xo5cv', 'n5mtmo3o', 'kdfy6sps', 'G', 'Louvor', 3),
-  ('0xzmas6e', 'n5mtmo3o', '55zbka52', '', 'Oferta', 4),
-  ('1geqfng0', 'qm2plppj', 'bofbcixg', 'C', 'Louvor', 0),
-  ('52loi03p', 'qm2plppj', 'y29db8p5', 'D', 'Louvor', 1),
-  ('8hssrrxq', 'qm2plppj', '35ye4scm', '', 'Oferta', 2),
-  ('qsg5lo50', 'rfw0h9ny', 'rynnefj7', '', 'Abertura', 0),
-  ('djzdnbj0', 'rfw0h9ny', 'c3lkr2aq', '', 'Louvor', 1),
-  ('ddlz2uhf', 'rfw0h9ny', 'xv9upctn', 'E', 'Louvor', 2),
-  ('kvml73ct', 'rfw0h9ny', 'wlavyf4r', 'Bb', 'Louvor', 3),
-  ('yxv2kgaf', 'rfw0h9ny', 'vauvzhma', '', 'Oferta', 4)
-on conflict (id) do update set escala_id=excluded.escala_id, musica_id=excluded.musica_id, tom=excluded.tom, momento=excluded.momento, ordem=excluded.ordem;
+  ('sqxezyex', 'pt49zhkk', 'fqrclri1', 'v-fqrclri1', 'D', 'Louvor', '', 0),
+  ('1rdrgdsj', 'pt49zhkk', 'qzj865uf', 'v-qzj865uf', 'D', 'Louvor', '', 1),
+  ('pr16umx1', 'pt49zhkk', 'rdl1erbf', 'v-rdl1erbf', 'A', 'Louvor', '', 2),
+  ('bz99nfd0', 'pt49zhkk', 'qxi6rhxo', 'v-qxi6rhxo', '', 'Oferta', '', 3),
+  ('2is5d9ik', 'pt49zhkk', 'qa3e68f7', 'v-qa3e68f7', '', 'Batismo', '', 4),
+  ('40vstqqz', 'pt49zhkk', 'hkqdlmtt', 'v-hkqdlmtt', 'D', 'Ceia', '', 5),
+  ('wt1fd4mx', 'qmevxrvc', '6mp6afqf', 'v-6mp6afqf', 'A', 'Louvor', '', 0),
+  ('82mux4b0', 'qmevxrvc', 'jzczbtto', 'v-jzczbtto', 'G', 'Louvor', '', 1),
+  ('pzcyc3ed', 'qmevxrvc', 'ejvqtia4', 'v-ejvqtia4', '', 'Oferta', '', 2),
+  ('en659o2v', 'vd5rxi67', 'qfoeqh3a', 'v-qfoeqh3a', 'E', 'Louvor', '', 0),
+  ('21i9mpfl', 'vd5rxi67', 'v90ric7p', 'v-v90ric7p', 'D', 'Louvor', '', 1),
+  ('v9fupxqm', 'vd5rxi67', 'hkqdlmtt', 'v-hkqdlmtt', 'D', 'Louvor', '', 2),
+  ('b0y07nyr', 'vd5rxi67', 'f4bs3e62', 'v-f4bs3e62', '', 'Oferta', '', 3),
+  ('nfrpyz21', '1hget7my', 'e4qeqpno', 'v-e4qeqpno', '', 'Abertura', '', 0),
+  ('tbic145a', '1hget7my', '7ns26lrw', 'v-7ns26lrw', 'E', 'Louvor', '', 1),
+  ('ez732pgo', '1hget7my', 'bqcab69m', 'v-bqcab69m', 'A', 'Louvor', '', 2),
+  ('jj7g3f9c', '1hget7my', '64p2g158', 'v-64p2g158', 'A', 'Louvor', '', 3),
+  ('aioctiq7', '1hget7my', 'd5rgn5s7', 'v-d5rgn5s7', '', 'Oferta', '', 4),
+  ('g43yq15i', '0ec498uk', 'f7jyu5js', 'v-f7jyu5js', 'G', 'Louvor', '', 0),
+  ('5latjpuu', '0ec498uk', 'jc616i76', 'v-jc616i76', 'G', 'Louvor', '', 1),
+  ('3xf6mzkp', '0ec498uk', 's333h9mt', 'v-s333h9mt', '', 'Oferta', '', 2),
+  ('qoaa8t3r', 'n5mtmo3o', 'ztj0wyuh', 'v-ztj0wyuh', '', 'Abertura', '', 0),
+  ('up47p9pb', 'n5mtmo3o', 'z6tnovmi', 'v-z6tnovmi', 'G', 'Louvor', '', 1),
+  ('0tdbm50f', 'n5mtmo3o', 'zwdiaeq1', 'v-zwdiaeq1', 'G', 'Louvor', '', 2),
+  ('qo1xo5cv', 'n5mtmo3o', 'kdfy6sps', 'v-kdfy6sps', 'G', 'Louvor', '', 3),
+  ('0xzmas6e', 'n5mtmo3o', '55zbka52', 'v-55zbka52', '', 'Oferta', '', 4),
+  ('1geqfng0', 'qm2plppj', 'bofbcixg', 'v-bofbcixg', 'C', 'Louvor', '', 0),
+  ('52loi03p', 'qm2plppj', 'y29db8p5', 'v-y29db8p5', 'D', 'Louvor', '', 1),
+  ('8hssrrxq', 'qm2plppj', '35ye4scm', 'v-35ye4scm', '', 'Oferta', '', 2),
+  ('qsg5lo50', 'rfw0h9ny', 'rynnefj7', 'v-rynnefj7', '', 'Abertura', '', 0),
+  ('djzdnbj0', 'rfw0h9ny', 'c3lkr2aq', 'v-c3lkr2aq', '', 'Louvor', '', 1),
+  ('ddlz2uhf', 'rfw0h9ny', 'xv9upctn', 'v-xv9upctn', 'E', 'Louvor', '', 2),
+  ('kvml73ct', 'rfw0h9ny', 'wlavyf4r', 'v-wlavyf4r', 'Bb', 'Louvor', '', 3),
+  ('yxv2kgaf', 'rfw0h9ny', 'vauvzhma', 'v-vauvzhma', '', 'Oferta', '', 4)
+on conflict (id) do update set escala_id=excluded.escala_id, musica_id=excluded.musica_id, versao_id=excluded.versao_id, tom=excluded.tom, momento=excluded.momento, observacoes=excluded.observacoes, ordem=excluded.ordem;
 
 commit;

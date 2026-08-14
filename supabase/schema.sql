@@ -32,6 +32,20 @@ create table if not exists public.musicas (
   atualizado_em timestamptz not null default now()
 );
 
+create table if not exists public.musica_versoes (
+  id text primary key,
+  musica_id text not null references public.musicas(id) on update cascade on delete cascade,
+  tom text not null default '',
+  youtube_url text not null default '',
+  cifra_url text not null default '',
+  vs_url text not null default '',
+  observacoes text not null default '',
+  ativo boolean not null default true,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  unique (musica_id, tom)
+);
+
 create table if not exists public.escalas (
   id text primary key,
   data date not null,
@@ -55,14 +69,17 @@ create table if not exists public.escala_repertorio (
   id text primary key,
   escala_id text not null references public.escalas(id) on update cascade on delete cascade,
   musica_id text not null references public.musicas(id) on update cascade on delete restrict,
+  versao_id text references public.musica_versoes(id) on update cascade on delete restrict,
   tom text not null default '',
   momento text not null default 'Louvor',
+  observacoes text not null default '',
   ordem smallint not null default 0 check (ordem >= 0),
   unique (escala_id, ordem)
 );
 
 create index if not exists membro_funcoes_funcao_idx on public.membro_funcoes(funcao);
 create index if not exists musicas_titulo_idx on public.musicas(lower(titulo));
+create index if not exists musica_versoes_musica_tom_idx on public.musica_versoes(musica_id, tom);
 create index if not exists escalas_data_idx on public.escalas(data);
 create index if not exists escala_equipe_escala_ordem_idx on public.escala_equipe(escala_id, ordem);
 create index if not exists escala_equipe_membro_idx on public.escala_equipe(membro_id);
@@ -89,6 +106,10 @@ drop trigger if exists musicas_atualizado_em on public.musicas;
 create trigger musicas_atualizado_em before update on public.musicas
 for each row execute function public.definir_atualizado_em();
 
+drop trigger if exists musica_versoes_atualizado_em on public.musica_versoes;
+create trigger musica_versoes_atualizado_em before update on public.musica_versoes
+for each row execute function public.definir_atualizado_em();
+
 drop trigger if exists escalas_atualizado_em on public.escalas;
 create trigger escalas_atualizado_em before update on public.escalas
 for each row execute function public.definir_atualizado_em();
@@ -96,6 +117,7 @@ for each row execute function public.definir_atualizado_em();
 alter table public.membros enable row level security;
 alter table public.membro_funcoes enable row level security;
 alter table public.musicas enable row level security;
+alter table public.musica_versoes enable row level security;
 alter table public.escalas enable row level security;
 alter table public.escala_equipe enable row level security;
 alter table public.escala_repertorio enable row level security;
@@ -103,6 +125,7 @@ alter table public.escala_repertorio enable row level security;
 grant select on table public.membros to anon;
 grant select on table public.membro_funcoes to anon;
 grant select on table public.musicas to anon;
+grant select on table public.musica_versoes to anon;
 grant select on table public.escalas to anon;
 grant select on table public.escala_equipe to anon;
 grant select on table public.escala_repertorio to anon;
@@ -110,6 +133,7 @@ grant select on table public.escala_repertorio to anon;
 grant select, insert, update, delete on table public.membros to authenticated;
 grant select, insert, update, delete on table public.membro_funcoes to authenticated;
 grant select, insert, update, delete on table public.musicas to authenticated;
+grant select, insert, update, delete on table public.musica_versoes to authenticated;
 grant select, insert, update, delete on table public.escalas to authenticated;
 grant select, insert, update, delete on table public.escala_equipe to authenticated;
 grant select, insert, update, delete on table public.escala_repertorio to authenticated;
@@ -122,6 +146,9 @@ create policy "Visualização pública de funções" on public.membro_funcoes fo
 
 drop policy if exists "Visualização pública de músicas" on public.musicas;
 create policy "Visualização pública de músicas" on public.musicas for select to anon using (true);
+
+drop policy if exists "Visualização pública de versões das músicas" on public.musica_versoes;
+create policy "Visualização pública de versões das músicas" on public.musica_versoes for select to anon using (true);
 
 drop policy if exists "Visualização pública de escalas" on public.escalas;
 create policy "Visualização pública de escalas" on public.escalas for select to anon using (true);
@@ -142,6 +169,10 @@ for all to authenticated using (true) with check (true);
 
 drop policy if exists "Usuários autenticados gerenciam músicas" on public.musicas;
 create policy "Usuários autenticados gerenciam músicas" on public.musicas
+for all to authenticated using (true) with check (true);
+
+drop policy if exists "Usuários autenticados gerenciam versões das músicas" on public.musica_versoes;
+create policy "Usuários autenticados gerenciam versões das músicas" on public.musica_versoes
 for all to authenticated using (true) with check (true);
 
 drop policy if exists "Usuários autenticados gerenciam escalas" on public.escalas;

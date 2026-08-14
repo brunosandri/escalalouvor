@@ -156,6 +156,43 @@ values
   ('64p2g158', 'Música', '', '', 'É Ele', 'A', 'https://www.youtube.com/watch?v=L3b2gRB7YVc', '', '')
 on conflict (id) do update set tipo=excluded.tipo, hinario=excluded.hinario, numero=excluded.numero, titulo=excluded.titulo, tom_padrao=excluded.tom_padrao, youtube_url=excluded.youtube_url, cifra_url=excluded.cifra_url, vs_url=excluded.vs_url;
 
+insert into public.musica_versoes (id, musica_id, tom, youtube_url, cifra_url, vs_url, observacoes)
+values
+  ('v-rynnefj7', 'rynnefj7', '', '', '', '', ''),
+  ('v-bqcab69m', 'bqcab69m', 'A', 'https://www.youtube.com/watch?v=hFwNSQVi0q0', '', '', ''),
+  ('v-y29db8p5', 'y29db8p5', 'D', 'https://www.youtube.com/watch?v=WTcHSW43bt0', '', '', ''),
+  ('v-qfoeqh3a', 'qfoeqh3a', 'E', 'https://www.youtube.com/watch?v=wgnLn7_uzeU', '', '', ''),
+  ('v-hkqdlmtt', 'hkqdlmtt', 'D', 'https://www.youtube.com/watch?v=MeX0yHMs9Nk', '', '', ''),
+  ('v-s333h9mt', 's333h9mt', '', '', '', '', ''),
+  ('v-qa3e68f7', 'qa3e68f7', '', '', '', '', ''),
+  ('v-rdl1erbf', 'rdl1erbf', 'A', 'https://www.youtube.com/watch?v=Kms05Fz2WsI', '', '', ''),
+  ('v-v90ric7p', 'v90ric7p', 'D', 'https://www.youtube.com/watch?v=FFPiiZEzWJg', '', '', ''),
+  ('v-6mp6afqf', '6mp6afqf', 'A', 'https://www.youtube.com/watch?v=4x-yrCz1D9g', '', '', ''),
+  ('v-bofbcixg', 'bofbcixg', 'C', 'https://www.youtube.com/watch?v=fJ5jeyZSEmU', '', '', ''),
+  ('v-e4qeqpno', 'e4qeqpno', '', '', '', '', ''),
+  ('v-jc616i76', 'jc616i76', 'G', 'https://www.youtube.com/watch?v=Sb6NVzVcp0g', '', '', ''),
+  ('v-qzj865uf', 'qzj865uf', 'D', 'https://www.youtube.com/watch?v=2hNyoLlVHHU', '', '', ''),
+  ('v-z6tnovmi', 'z6tnovmi', 'G', 'https://www.youtube.com/watch?v=HMH5EnH2FvA', '', '', ''),
+  ('v-55zbka52', '55zbka52', '', '', '', '', ''),
+  ('v-qxi6rhxo', 'qxi6rhxo', '', '', '', '', ''),
+  ('v-ejvqtia4', 'ejvqtia4', '', '', '', '', ''),
+  ('v-vauvzhma', 'vauvzhma', '', '', '', '', ''),
+  ('v-d5rgn5s7', 'd5rgn5s7', '', '', '', '', ''),
+  ('v-f4bs3e62', 'f4bs3e62', '', 'https://www.youtube.com/watch?v=TfIuwktmISw', '', '', ''),
+  ('v-35ye4scm', '35ye4scm', '', '', '', '', ''),
+  ('v-wlavyf4r', 'wlavyf4r', 'Bb', 'https://www.youtube.com/watch?v=Ckfsn1KpHXY', '', '', ''),
+  ('v-jzczbtto', 'jzczbtto', 'G', 'https://www.youtube.com/watch?v=9iXjzpusq7M', '', '', ''),
+  ('v-kdfy6sps', 'kdfy6sps', 'G', 'https://www.youtube.com/watch?v=Hy6QJ6LJW2I', '', '', ''),
+  ('v-ztj0wyuh', 'ztj0wyuh', '', '', '', '', ''),
+  ('v-c3lkr2aq', 'c3lkr2aq', '', '', '', '', ''),
+  ('v-fqrclri1', 'fqrclri1', 'D', 'https://www.youtube.com/watch?v=sX0KVSex6lI', '', '', ''),
+  ('v-f7jyu5js', 'f7jyu5js', 'G', 'https://www.youtube.com/watch?v=NcSF8sgP84A', '', '', ''),
+  ('v-zwdiaeq1', 'zwdiaeq1', 'G', 'https://www.youtube.com/watch?v=JMV-K0d1QYQ', '', '', ''),
+  ('v-xv9upctn', 'xv9upctn', 'E', '', '', '', ''),
+  ('v-7ns26lrw', '7ns26lrw', 'E', 'https://www.youtube.com/watch?v=4gDi8FIJKHc', '', '', ''),
+  ('v-64p2g158', '64p2g158', 'A', 'https://www.youtube.com/watch?v=L3b2gRB7YVc', '', '', '')
+on conflict (musica_id, tom) do update set youtube_url=excluded.youtube_url, cifra_url=excluded.cifra_url, vs_url=excluded.vs_url, observacoes=excluded.observacoes, ativo=true;
+
 insert into public.escalas (id, data, culto, saudacao, ensaio, observacoes)
 values
   ('pt49zhkk', '2026-08-02', 'Culto da Família (dom 19h)', 'Bommm diaa', 'Ensaio no domingo após a EBD.', ''),
@@ -286,42 +323,42 @@ values
   ('rfw0h9ny', 'xbv932by', 'Câmera 2', 17)
 on conflict (escala_id, membro_id, funcao) do update set ordem=excluded.ordem;
 
-insert into public.escala_repertorio (id, escala_id, musica_id, tom, momento, ordem)
+insert into public.escala_repertorio (id, escala_id, musica_id, versao_id, tom, momento, observacoes, ordem)
 values
-  ('sqxezyex', 'pt49zhkk', 'fqrclri1', 'D', 'Louvor', 0),
-  ('1rdrgdsj', 'pt49zhkk', 'qzj865uf', 'D', 'Louvor', 1),
-  ('pr16umx1', 'pt49zhkk', 'rdl1erbf', 'A', 'Louvor', 2),
-  ('bz99nfd0', 'pt49zhkk', 'qxi6rhxo', '', 'Oferta', 3),
-  ('2is5d9ik', 'pt49zhkk', 'qa3e68f7', '', 'Batismo', 4),
-  ('40vstqqz', 'pt49zhkk', 'hkqdlmtt', 'D', 'Ceia', 5),
-  ('wt1fd4mx', 'qmevxrvc', '6mp6afqf', 'A', 'Louvor', 0),
-  ('82mux4b0', 'qmevxrvc', 'jzczbtto', 'G', 'Louvor', 1),
-  ('pzcyc3ed', 'qmevxrvc', 'ejvqtia4', '', 'Oferta', 2),
-  ('en659o2v', 'vd5rxi67', 'qfoeqh3a', 'E', 'Louvor', 0),
-  ('21i9mpfl', 'vd5rxi67', 'v90ric7p', 'D', 'Louvor', 1),
-  ('v9fupxqm', 'vd5rxi67', 'hkqdlmtt', 'D', 'Louvor', 2),
-  ('b0y07nyr', 'vd5rxi67', 'f4bs3e62', '', 'Oferta', 3),
-  ('nfrpyz21', '1hget7my', 'e4qeqpno', '', 'Abertura', 0),
-  ('tbic145a', '1hget7my', '7ns26lrw', 'E', 'Louvor', 1),
-  ('ez732pgo', '1hget7my', 'bqcab69m', 'A', 'Louvor', 2),
-  ('jj7g3f9c', '1hget7my', '64p2g158', 'A', 'Louvor', 3),
-  ('aioctiq7', '1hget7my', 'd5rgn5s7', '', 'Oferta', 4),
-  ('g43yq15i', '0ec498uk', 'f7jyu5js', 'G', 'Louvor', 0),
-  ('5latjpuu', '0ec498uk', 'jc616i76', 'G', 'Louvor', 1),
-  ('3xf6mzkp', '0ec498uk', 's333h9mt', '', 'Oferta', 2),
-  ('qoaa8t3r', 'n5mtmo3o', 'ztj0wyuh', '', 'Abertura', 0),
-  ('up47p9pb', 'n5mtmo3o', 'z6tnovmi', 'G', 'Louvor', 1),
-  ('0tdbm50f', 'n5mtmo3o', 'zwdiaeq1', 'G', 'Louvor', 2),
-  ('qo1xo5cv', 'n5mtmo3o', 'kdfy6sps', 'G', 'Louvor', 3),
-  ('0xzmas6e', 'n5mtmo3o', '55zbka52', '', 'Oferta', 4),
-  ('1geqfng0', 'qm2plppj', 'bofbcixg', 'C', 'Louvor', 0),
-  ('52loi03p', 'qm2plppj', 'y29db8p5', 'D', 'Louvor', 1),
-  ('8hssrrxq', 'qm2plppj', '35ye4scm', '', 'Oferta', 2),
-  ('qsg5lo50', 'rfw0h9ny', 'rynnefj7', '', 'Abertura', 0),
-  ('djzdnbj0', 'rfw0h9ny', 'c3lkr2aq', '', 'Louvor', 1),
-  ('ddlz2uhf', 'rfw0h9ny', 'xv9upctn', 'E', 'Louvor', 2),
-  ('kvml73ct', 'rfw0h9ny', 'wlavyf4r', 'Bb', 'Louvor', 3),
-  ('yxv2kgaf', 'rfw0h9ny', 'vauvzhma', '', 'Oferta', 4)
-on conflict (id) do update set escala_id=excluded.escala_id, musica_id=excluded.musica_id, tom=excluded.tom, momento=excluded.momento, ordem=excluded.ordem;
+  ('sqxezyex', 'pt49zhkk', 'fqrclri1', 'v-fqrclri1', 'D', 'Louvor', '', 0),
+  ('1rdrgdsj', 'pt49zhkk', 'qzj865uf', 'v-qzj865uf', 'D', 'Louvor', '', 1),
+  ('pr16umx1', 'pt49zhkk', 'rdl1erbf', 'v-rdl1erbf', 'A', 'Louvor', '', 2),
+  ('bz99nfd0', 'pt49zhkk', 'qxi6rhxo', 'v-qxi6rhxo', '', 'Oferta', '', 3),
+  ('2is5d9ik', 'pt49zhkk', 'qa3e68f7', 'v-qa3e68f7', '', 'Batismo', '', 4),
+  ('40vstqqz', 'pt49zhkk', 'hkqdlmtt', 'v-hkqdlmtt', 'D', 'Ceia', '', 5),
+  ('wt1fd4mx', 'qmevxrvc', '6mp6afqf', 'v-6mp6afqf', 'A', 'Louvor', '', 0),
+  ('82mux4b0', 'qmevxrvc', 'jzczbtto', 'v-jzczbtto', 'G', 'Louvor', '', 1),
+  ('pzcyc3ed', 'qmevxrvc', 'ejvqtia4', 'v-ejvqtia4', '', 'Oferta', '', 2),
+  ('en659o2v', 'vd5rxi67', 'qfoeqh3a', 'v-qfoeqh3a', 'E', 'Louvor', '', 0),
+  ('21i9mpfl', 'vd5rxi67', 'v90ric7p', 'v-v90ric7p', 'D', 'Louvor', '', 1),
+  ('v9fupxqm', 'vd5rxi67', 'hkqdlmtt', 'v-hkqdlmtt', 'D', 'Louvor', '', 2),
+  ('b0y07nyr', 'vd5rxi67', 'f4bs3e62', 'v-f4bs3e62', '', 'Oferta', '', 3),
+  ('nfrpyz21', '1hget7my', 'e4qeqpno', 'v-e4qeqpno', '', 'Abertura', '', 0),
+  ('tbic145a', '1hget7my', '7ns26lrw', 'v-7ns26lrw', 'E', 'Louvor', '', 1),
+  ('ez732pgo', '1hget7my', 'bqcab69m', 'v-bqcab69m', 'A', 'Louvor', '', 2),
+  ('jj7g3f9c', '1hget7my', '64p2g158', 'v-64p2g158', 'A', 'Louvor', '', 3),
+  ('aioctiq7', '1hget7my', 'd5rgn5s7', 'v-d5rgn5s7', '', 'Oferta', '', 4),
+  ('g43yq15i', '0ec498uk', 'f7jyu5js', 'v-f7jyu5js', 'G', 'Louvor', '', 0),
+  ('5latjpuu', '0ec498uk', 'jc616i76', 'v-jc616i76', 'G', 'Louvor', '', 1),
+  ('3xf6mzkp', '0ec498uk', 's333h9mt', 'v-s333h9mt', '', 'Oferta', '', 2),
+  ('qoaa8t3r', 'n5mtmo3o', 'ztj0wyuh', 'v-ztj0wyuh', '', 'Abertura', '', 0),
+  ('up47p9pb', 'n5mtmo3o', 'z6tnovmi', 'v-z6tnovmi', 'G', 'Louvor', '', 1),
+  ('0tdbm50f', 'n5mtmo3o', 'zwdiaeq1', 'v-zwdiaeq1', 'G', 'Louvor', '', 2),
+  ('qo1xo5cv', 'n5mtmo3o', 'kdfy6sps', 'v-kdfy6sps', 'G', 'Louvor', '', 3),
+  ('0xzmas6e', 'n5mtmo3o', '55zbka52', 'v-55zbka52', '', 'Oferta', '', 4),
+  ('1geqfng0', 'qm2plppj', 'bofbcixg', 'v-bofbcixg', 'C', 'Louvor', '', 0),
+  ('52loi03p', 'qm2plppj', 'y29db8p5', 'v-y29db8p5', 'D', 'Louvor', '', 1),
+  ('8hssrrxq', 'qm2plppj', '35ye4scm', 'v-35ye4scm', '', 'Oferta', '', 2),
+  ('qsg5lo50', 'rfw0h9ny', 'rynnefj7', 'v-rynnefj7', '', 'Abertura', '', 0),
+  ('djzdnbj0', 'rfw0h9ny', 'c3lkr2aq', 'v-c3lkr2aq', '', 'Louvor', '', 1),
+  ('ddlz2uhf', 'rfw0h9ny', 'xv9upctn', 'v-xv9upctn', 'E', 'Louvor', '', 2),
+  ('kvml73ct', 'rfw0h9ny', 'wlavyf4r', 'v-wlavyf4r', 'Bb', 'Louvor', '', 3),
+  ('yxv2kgaf', 'rfw0h9ny', 'vauvzhma', 'v-vauvzhma', '', 'Oferta', '', 4)
+on conflict (id) do update set escala_id=excluded.escala_id, musica_id=excluded.musica_id, versao_id=excluded.versao_id, tom=excluded.tom, momento=excluded.momento, observacoes=excluded.observacoes, ordem=excluded.ordem;
 
 commit;
