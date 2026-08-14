@@ -1,0 +1,472 @@
+-- INSTALAÇÃO COMPLETA DO ESCALA LOUVOR
+-- Cole este arquivo inteiro no SQL Editor do Supabase e clique em Run.
+
+begin;
+
+create table if not exists public.membros (
+  id text primary key,
+  nome text not null check (char_length(trim(nome)) between 2 and 120),
+  whatsapp text not null default '',
+  avatar jsonb not null default '{}'::jsonb,
+  ativo boolean not null default true,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now()
+);
+
+create table if not exists public.membro_funcoes (
+  membro_id text not null references public.membros(id) on update cascade on delete cascade,
+  funcao text not null check (char_length(trim(funcao)) > 0),
+  ordem smallint not null default 0 check (ordem >= 0),
+  primary key (membro_id, funcao)
+);
+
+create table if not exists public.musicas (
+  id text primary key,
+  tipo text not null default 'Música' check (tipo in ('Música', 'Hino')),
+  hinario text not null default '',
+  numero text not null default '',
+  titulo text not null check (char_length(trim(titulo)) between 1 and 180),
+  tom_padrao text not null default '',
+  youtube_url text not null default '',
+  cifra_url text not null default '',
+  vs_url text not null default '',
+  ativo boolean not null default true,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now()
+);
+
+create table if not exists public.escalas (
+  id text primary key,
+  data date not null,
+  culto text not null check (char_length(trim(culto)) > 0),
+  saudacao text not null default 'Olá!',
+  ensaio text not null default '',
+  observacoes text not null default '',
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now()
+);
+
+create table if not exists public.escala_equipe (
+  escala_id text not null references public.escalas(id) on update cascade on delete cascade,
+  membro_id text not null references public.membros(id) on update cascade on delete restrict,
+  funcao text not null check (char_length(trim(funcao)) > 0),
+  ordem smallint not null default 0 check (ordem >= 0),
+  primary key (escala_id, membro_id, funcao)
+);
+
+create table if not exists public.escala_repertorio (
+  id text primary key,
+  escala_id text not null references public.escalas(id) on update cascade on delete cascade,
+  musica_id text not null references public.musicas(id) on update cascade on delete restrict,
+  tom text not null default '',
+  momento text not null default 'Louvor',
+  ordem smallint not null default 0 check (ordem >= 0),
+  unique (escala_id, ordem)
+);
+
+create index if not exists membro_funcoes_funcao_idx on public.membro_funcoes(funcao);
+create index if not exists musicas_titulo_idx on public.musicas(lower(titulo));
+create index if not exists escalas_data_idx on public.escalas(data);
+create index if not exists escala_equipe_escala_ordem_idx on public.escala_equipe(escala_id, ordem);
+create index if not exists escala_equipe_membro_idx on public.escala_equipe(membro_id);
+create index if not exists escala_repertorio_escala_ordem_idx on public.escala_repertorio(escala_id, ordem);
+create index if not exists escala_repertorio_musica_idx on public.escala_repertorio(musica_id);
+
+create or replace function public.definir_atualizado_em()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  new.atualizado_em = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists membros_atualizado_em on public.membros;
+create trigger membros_atualizado_em before update on public.membros
+for each row execute function public.definir_atualizado_em();
+
+drop trigger if exists musicas_atualizado_em on public.musicas;
+create trigger musicas_atualizado_em before update on public.musicas
+for each row execute function public.definir_atualizado_em();
+
+drop trigger if exists escalas_atualizado_em on public.escalas;
+create trigger escalas_atualizado_em before update on public.escalas
+for each row execute function public.definir_atualizado_em();
+
+alter table public.membros enable row level security;
+alter table public.membro_funcoes enable row level security;
+alter table public.musicas enable row level security;
+alter table public.escalas enable row level security;
+alter table public.escala_equipe enable row level security;
+alter table public.escala_repertorio enable row level security;
+
+revoke all on table public.membros from anon;
+revoke all on table public.membro_funcoes from anon;
+revoke all on table public.musicas from anon;
+revoke all on table public.escalas from anon;
+revoke all on table public.escala_equipe from anon;
+revoke all on table public.escala_repertorio from anon;
+
+grant select, insert, update, delete on table public.membros to authenticated;
+grant select, insert, update, delete on table public.membro_funcoes to authenticated;
+grant select, insert, update, delete on table public.musicas to authenticated;
+grant select, insert, update, delete on table public.escalas to authenticated;
+grant select, insert, update, delete on table public.escala_equipe to authenticated;
+grant select, insert, update, delete on table public.escala_repertorio to authenticated;
+
+drop policy if exists "Usuários autenticados gerenciam membros" on public.membros;
+create policy "Usuários autenticados gerenciam membros" on public.membros
+for all to authenticated using (true) with check (true);
+
+drop policy if exists "Usuários autenticados gerenciam funções" on public.membro_funcoes;
+create policy "Usuários autenticados gerenciam funções" on public.membro_funcoes
+for all to authenticated using (true) with check (true);
+
+drop policy if exists "Usuários autenticados gerenciam músicas" on public.musicas;
+create policy "Usuários autenticados gerenciam músicas" on public.musicas
+for all to authenticated using (true) with check (true);
+
+drop policy if exists "Usuários autenticados gerenciam escalas" on public.escalas;
+create policy "Usuários autenticados gerenciam escalas" on public.escalas
+for all to authenticated using (true) with check (true);
+
+drop policy if exists "Usuários autenticados gerenciam equipe da escala" on public.escala_equipe;
+create policy "Usuários autenticados gerenciam equipe da escala" on public.escala_equipe
+for all to authenticated using (true) with check (true);
+
+drop policy if exists "Usuários autenticados gerenciam repertório da escala" on public.escala_repertorio;
+create policy "Usuários autenticados gerenciam repertório da escala" on public.escala_repertorio
+for all to authenticated using (true) with check (true);
+
+commit;
+
+-- Gerado automaticamente a partir de outros/banco-escala-louvor.json
+-- Execute depois de supabase/schema.sql.
+
+begin;
+
+insert into public.membros (id, nome, whatsapp, avatar)
+values
+  ('ujzde8gx', 'Alex Cal', '(067) 9174-5643', '{}'::jsonb),
+  ('q80idw37', 'Alex Cano', '', '{}'::jsonb),
+  ('xkwo886v', 'Aline', '(067) 9216-5342', '{}'::jsonb),
+  ('d6ncf10e', 'Ana Lara', '(067) 9929-0151', '{}'::jsonb),
+  ('v7s6ehog', 'Andre Kumpel', '', '{}'::jsonb),
+  ('ui6d39zz', 'André Luiz (Dedé)', '(067) 9945-3476', '{}'::jsonb),
+  ('29be2u66', 'Annelise', '', '{}'::jsonb),
+  ('344tfjgv', 'Bruno Krugmann', '(067) 8437-2655', '{}'::jsonb),
+  ('jfljooa5', 'Bruno Plentz', '(067) 9671-6271', '{}'::jsonb),
+  ('06i8j76b', 'Bruno Sandri', '(067) 9959-3134', '{}'::jsonb),
+  ('z5fk2z9r', 'Carolina Serafim', '(067) 9660-7920', '{}'::jsonb),
+  ('pf91dhod', 'Daniel', '(067) 9864-5301', '{}'::jsonb),
+  ('j8b7tfq7', 'Darley', '(067) 9946-7338', '{}'::jsonb),
+  ('ogz5kok1', 'Davi Picolo', '', '{}'::jsonb),
+  ('9dpmrcg6', 'Ditgard', '', '{}'::jsonb),
+  ('n2khvdga', 'Eduardo', '(067) 9915-0861', '{}'::jsonb),
+  ('2lajlj4h', 'Fernando Kudiess', '', '{}'::jsonb),
+  ('q4k7bn7x', 'Gabriel Bertolim', '(067) 9284-1513', '{}'::jsonb),
+  ('zdoc9is0', 'Gabriel Ferreira', '(067) 9982-7884', '{}'::jsonb),
+  ('7q9m2i0h', 'Gabriel Schwinn', '', '{}'::jsonb),
+  ('j8ht9lgm', 'Gabriela Marangon Frizzo', '(067) 9999-1921', '{}'::jsonb),
+  ('9du7794g', 'Giovanna Kudiess', '', '{}'::jsonb),
+  ('xg9edn58', 'Giuliano Vieira Cambuhy', '(067) 9207-4172', '{}'::jsonb),
+  ('wbbr4qmw', 'Gustavo', '(067) 8429-9941', '{}'::jsonb),
+  ('6zv0mwuf', 'Heitor', '', '{}'::jsonb),
+  ('lqsaj08x', 'Helga', '(067) 8135-4335', '{}'::jsonb),
+  ('xbv932by', 'Hugo', '', '{}'::jsonb),
+  ('z2uep1en', 'Jone', '', '{}'::jsonb),
+  ('j8gxbeny', 'Jorge', '(045) 93300-8175', '{}'::jsonb),
+  ('mvn4a4wf', 'Juninho', '', '{}'::jsonb),
+  ('1u33xtpl', 'Júlia Soutelo', '(067) 9999-8681', '{}'::jsonb),
+  ('2wxfogo4', 'Kenedy', '(067) 9275-9682', '{}'::jsonb),
+  ('hym4l1vf', 'Leandro', '', '{}'::jsonb),
+  ('pft75v2s', 'Lucas', '(067) 9609-1274', '{}'::jsonb),
+  ('jqwx4hh5', 'Lucas Biagi', '(067) 9667-0575', '{}'::jsonb),
+  ('z3zfkkib', 'Luciana Debortoli', '(067) 9132-5252', '{}'::jsonb),
+  ('eh60kvj5', 'Luciani P. Alves', '(067) 9973-0810', '{}'::jsonb),
+  ('0ce9uvw5', 'Luiz Eduardo Vieirav', '(067) 9329-3000', '{}'::jsonb),
+  ('j3j4wj99', 'Mariane K', '', '{}'::jsonb),
+  ('thjxjqi3', 'Marquinhos', '', '{}'::jsonb),
+  ('ompzom75', 'Mateus Neitzke', '(067) 9644-1254', '{}'::jsonb),
+  ('3efr4edt', 'Mirian', '(067) 9200-2775', '{}'::jsonb),
+  ('i19r0wyo', 'Nilce Neitze', '(067) 9857-4908', '{}'::jsonb),
+  ('ibag7i1m', 'Rafael Alves', '', '{}'::jsonb),
+  ('nbqns6pu', 'Samuel Moura Debortoli', '', '{}'::jsonb),
+  ('mr26846p', 'Samuel Q.', '', '{}'::jsonb),
+  ('2sywb3wk', 'Talita', '(067) 9915-4199', '{}'::jsonb),
+  ('zzg4zdme', 'Taís Fernanda', '(067) 9904-9823', '{}'::jsonb),
+  ('h5dnsipz', 'Vítor Henrique Alves', '(067) 9973-1239', '{}'::jsonb)
+on conflict (id) do update set nome=excluded.nome, whatsapp=excluded.whatsapp, avatar=excluded.avatar;
+
+insert into public.membro_funcoes (membro_id, funcao, ordem)
+values
+  ('ujzde8gx', 'Baixo', 0),
+  ('q80idw37', 'Bateria', 0),
+  ('q80idw37', 'Som', 1),
+  ('d6ncf10e', 'Mídia', 0),
+  ('v7s6ehog', 'Vocal masculino', 0),
+  ('ui6d39zz', 'Baixo', 0),
+  ('29be2u66', 'Piano', 0),
+  ('344tfjgv', 'Vocal masculino', 0),
+  ('jfljooa5', 'Bateria', 0),
+  ('06i8j76b', 'Baixo', 0),
+  ('06i8j76b', 'Mesa de corte', 1),
+  ('z5fk2z9r', 'Mídia', 0),
+  ('pf91dhod', 'Bateria', 0),
+  ('j8b7tfq7', 'Guitarra', 0),
+  ('ogz5kok1', 'Câmera 1', 0),
+  ('9dpmrcg6', 'Órgão', 0),
+  ('n2khvdga', 'Violão', 0),
+  ('n2khvdga', 'Som', 1),
+  ('2lajlj4h', 'Vocal masculino', 0),
+  ('q4k7bn7x', 'Guitarra', 0),
+  ('q4k7bn7x', 'Violão', 1),
+  ('zdoc9is0', 'Vocal masculino', 0),
+  ('7q9m2i0h', 'Som', 0),
+  ('j8ht9lgm', 'Vocal feminino', 0),
+  ('9du7794g', 'Vocal feminino', 0),
+  ('xg9edn58', 'Vocal masculino', 0),
+  ('6zv0mwuf', 'Câmera 2', 0),
+  ('lqsaj08x', 'Piano', 0),
+  ('xbv932by', 'Câmera 1', 0),
+  ('xbv932by', 'Câmera 2', 1),
+  ('z2uep1en', 'Mesa de corte', 0),
+  ('z2uep1en', 'Câmera 1', 1),
+  ('j8gxbeny', 'Vocal masculino', 0),
+  ('mvn4a4wf', 'Som', 0),
+  ('1u33xtpl', 'Mídia', 0),
+  ('2wxfogo4', 'Mídia', 0),
+  ('hym4l1vf', 'Violão', 0),
+  ('pft75v2s', 'Vocal masculino', 0),
+  ('z3zfkkib', 'Vocal feminino', 0),
+  ('z3zfkkib', 'Violão', 1),
+  ('z3zfkkib', 'Teclado', 2),
+  ('z3zfkkib', 'Dirigente', 3),
+  ('eh60kvj5', 'Vocal feminino', 0),
+  ('eh60kvj5', 'Dirigente', 1),
+  ('0ce9uvw5', 'Vocal masculino', 0),
+  ('j3j4wj99', 'Vocal feminino', 0),
+  ('thjxjqi3', 'Mesa de corte', 0),
+  ('3efr4edt', 'Vocal feminino', 0),
+  ('i19r0wyo', 'Vocal feminino', 0),
+  ('ibag7i1m', 'Vocal masculino', 0),
+  ('nbqns6pu', 'Teclado', 0),
+  ('nbqns6pu', 'Bateria', 1),
+  ('nbqns6pu', 'Guitarra', 2),
+  ('mr26846p', 'Mídia', 0),
+  ('2sywb3wk', 'Vocal feminino', 0),
+  ('2sywb3wk', 'Dirigente', 1),
+  ('zzg4zdme', 'Vocal feminino', 0),
+  ('zzg4zdme', 'Dirigente', 1),
+  ('h5dnsipz', 'Baixo', 0)
+on conflict (membro_id, funcao) do update set ordem=excluded.ordem;
+
+insert into public.musicas (id, tipo, hinario, numero, titulo, tom_padrao, youtube_url, cifra_url, vs_url)
+values
+  ('rynnefj7', 'Hino', 'HCC', '228', 'A Deus demos Glória', '', '', '', ''),
+  ('bqcab69m', 'Música', '', '', 'Ainda que a figueira', 'A', 'https://www.youtube.com/watch?v=hFwNSQVi0q0', '', ''),
+  ('y29db8p5', 'Música', '', '', 'Atrai o meu coração', 'D', 'https://www.youtube.com/watch?v=WTcHSW43bt0', '', ''),
+  ('qfoeqh3a', 'Música', '', '', 'Celebrai com Júbilo', 'E', 'https://www.youtube.com/watch?v=wgnLn7_uzeU', '', ''),
+  ('hkqdlmtt', 'Música', '', '', 'Colossenses e suas linhas', 'D', 'https://www.youtube.com/watch?v=MeX0yHMs9Nk', '', ''),
+  ('s333h9mt', 'Hino', 'CC', '406', 'Confiar em Cristo', '', '', '', ''),
+  ('qa3e68f7', 'Música', '', '', 'Coro Santo (Banda)', '', '', '', ''),
+  ('rdl1erbf', 'Música', '', '', 'Cristo Venceu', 'A', 'https://www.youtube.com/watch?v=Kms05Fz2WsI', '', ''),
+  ('v90ric7p', 'Música', '', '', 'Ele é exaltado', 'D', 'https://www.youtube.com/watch?v=FFPiiZEzWJg', '', ''),
+  ('6mp6afqf', 'Música', '', '', 'Estamos de Pé', 'A', 'https://www.youtube.com/watch?v=4x-yrCz1D9g', '', ''),
+  ('bofbcixg', 'Música', '', '', 'Fome', 'C', 'https://www.youtube.com/watch?v=fJ5jeyZSEmU', '', ''),
+  ('e4qeqpno', 'Hino', 'CC', '06', 'Glória ao Senhor', '', '', '', ''),
+  ('jc616i76', 'Música', '', '', 'Jesus é o rei da Glória', 'G', 'https://www.youtube.com/watch?v=Sb6NVzVcp0g', '', ''),
+  ('qzj865uf', 'Música', '', '', 'Louvor e Honra', 'D', 'https://www.youtube.com/watch?v=2hNyoLlVHHU', '', ''),
+  ('z6tnovmi', 'Música', '', '', 'Mais forte que a morte', 'G', 'https://www.youtube.com/watch?v=HMH5EnH2FvA', '', ''),
+  ('55zbka52', 'Hino', 'HCC', '408', 'Mestre o mar se revolta', '', '', '', ''),
+  ('qxi6rhxo', 'Hino', 'HCC', '361', 'Meu Senhor sou teu', '', '', '', ''),
+  ('ejvqtia4', 'Hino', 'CC', '294', 'Necessitado', '', '', '', ''),
+  ('vauvzhma', 'Hino', 'HCC', '491', 'No serviço do meu Rei', '', '', '', ''),
+  ('d5rgn5s7', 'Hino', 'CC', '377', 'Não sei por que', '', '', '', ''),
+  ('f4bs3e62', 'Hino', 'CC', '456', 'O Estandarte', '', 'https://www.youtube.com/watch?v=TfIuwktmISw', '', ''),
+  ('35ye4scm', 'Hino', 'CC', '155', 'O grande amigo', '', '', '', ''),
+  ('wlavyf4r', 'Música', '', '', 'Obrigado Jesus', 'Bb', 'https://www.youtube.com/watch?v=Ckfsn1KpHXY', '', ''),
+  ('jzczbtto', 'Música', '', '', 'Oferta de amor', 'G', 'https://www.youtube.com/watch?v=9iXjzpusq7M', '', ''),
+  ('kdfy6sps', 'Música', '', '', 'Preciso de Ti', 'G', 'https://www.youtube.com/watch?v=Hy6QJ6LJW2I', '', ''),
+  ('ztj0wyuh', 'Hino', 'HCC', '417', 'Que segurança', '', '', '', ''),
+  ('c3lkr2aq', 'Música', '', '', 'Quero Louvar-te + Vem', '', '', '', ''),
+  ('fqrclri1', 'Música', '', '', 'Redenção', 'D', 'https://www.youtube.com/watch?v=sX0KVSex6lI', '', ''),
+  ('f7jyu5js', 'Música', '', '', 'Salmo 96', 'G', 'https://www.youtube.com/watch?v=NcSF8sgP84A', '', ''),
+  ('zwdiaeq1', 'Música', '', '', 'Senhor te Quero', 'G', 'https://www.youtube.com/watch?v=JMV-K0d1QYQ', '', ''),
+  ('xv9upctn', 'Música', '', '', 'Tributo', 'E', '', '', ''),
+  ('7ns26lrw', 'Música', '', '', 'Tu és Bom', 'E', 'https://www.youtube.com/watch?v=4gDi8FIJKHc', '', ''),
+  ('64p2g158', 'Música', '', '', 'É Ele', 'A', 'https://www.youtube.com/watch?v=L3b2gRB7YVc', '', '')
+on conflict (id) do update set tipo=excluded.tipo, hinario=excluded.hinario, numero=excluded.numero, titulo=excluded.titulo, tom_padrao=excluded.tom_padrao, youtube_url=excluded.youtube_url, cifra_url=excluded.cifra_url, vs_url=excluded.vs_url;
+
+insert into public.escalas (id, data, culto, saudacao, ensaio, observacoes)
+values
+  ('pt49zhkk', '2026-08-02', 'Culto da Família (dom 19h)', 'Bommm diaa', 'Ensaio no domingo após a EBD.', ''),
+  ('qmevxrvc', '2026-08-05', 'Culto de Oração (qua 19h)', 'Bommm diaa', '', ''),
+  ('vd5rxi67', '2026-08-09', 'Culto da Família (dom 19h)', 'Bommm diaa', 'Ensaio no domingo após a EBD.', ''),
+  ('qurtaebo', '2026-08-12', 'Culto de Oração (qua 19h)', 'Bommm diaa', '', 'Coral de Crianças Watoto — sem escala da equipe.'),
+  ('1hget7my', '2026-08-16', 'Culto da Família (dom 19h)', 'Bommm diaa', 'Ensaio no domingo após a EBD.', ''),
+  ('0ec498uk', '2026-08-19', 'Culto de Oração (qua 19h)', 'Bommm diaa', '', ''),
+  ('n5mtmo3o', '2026-08-23', 'Culto da Família (dom 19h)', 'Bommm diaa', 'Ensaio no domingo após a EBD.', ''),
+  ('qm2plppj', '2026-08-26', 'Culto de Oração (qua 19h)', 'Bommm diaa', '', ''),
+  ('rfw0h9ny', '2026-08-30', 'Culto da Família (dom 19h)', 'Bommm diaa', 'Ensaio no domingo após a EBD.', '')
+on conflict (id) do update set data=excluded.data, culto=excluded.culto, saudacao=excluded.saudacao, ensaio=excluded.ensaio, observacoes=excluded.observacoes;
+
+insert into public.escala_equipe (escala_id, membro_id, funcao, ordem)
+values
+  ('pt49zhkk', 'z3zfkkib', 'Dirigente', 0),
+  ('pt49zhkk', 'eh60kvj5', 'Vocal feminino', 1),
+  ('pt49zhkk', '2sywb3wk', 'Vocal feminino', 2),
+  ('pt49zhkk', 'zdoc9is0', 'Vocal masculino', 3),
+  ('pt49zhkk', 'pft75v2s', 'Vocal masculino', 4),
+  ('pt49zhkk', 'q4k7bn7x', 'Violão', 5),
+  ('pt49zhkk', 'ui6d39zz', 'Baixo', 6),
+  ('pt49zhkk', 'nbqns6pu', 'Teclado', 7),
+  ('pt49zhkk', 'jfljooa5', 'Bateria', 8),
+  ('pt49zhkk', 'j8b7tfq7', 'Guitarra', 9),
+  ('pt49zhkk', '29be2u66', 'Piano', 10),
+  ('pt49zhkk', '9dpmrcg6', 'Órgão', 11),
+  ('pt49zhkk', '1u33xtpl', 'Mídia', 12),
+  ('pt49zhkk', 'q80idw37', 'Som', 13),
+  ('pt49zhkk', '06i8j76b', 'Mesa de corte', 14),
+  ('pt49zhkk', 'z2uep1en', 'Câmera 1', 15),
+  ('pt49zhkk', '6zv0mwuf', 'Câmera 2', 16),
+  ('qmevxrvc', '2sywb3wk', 'Dirigente', 0),
+  ('qmevxrvc', 'xg9edn58', 'Vocal masculino', 1),
+  ('qmevxrvc', '9du7794g', 'Vocal feminino', 2),
+  ('qmevxrvc', '0ce9uvw5', 'Vocal masculino', 3),
+  ('qmevxrvc', 'z3zfkkib', 'Violão', 4),
+  ('qmevxrvc', 'h5dnsipz', 'Baixo', 5),
+  ('qmevxrvc', 'nbqns6pu', 'Bateria', 6),
+  ('qmevxrvc', '9dpmrcg6', 'Órgão', 7),
+  ('qmevxrvc', '1u33xtpl', 'Mídia', 8),
+  ('vd5rxi67', 'zzg4zdme', 'Dirigente', 0),
+  ('vd5rxi67', 'j8gxbeny', 'Vocal masculino', 1),
+  ('vd5rxi67', '3efr4edt', 'Vocal feminino', 2),
+  ('vd5rxi67', '344tfjgv', 'Vocal masculino', 3),
+  ('vd5rxi67', 'zdoc9is0', 'Vocal masculino', 4),
+  ('vd5rxi67', 'n2khvdga', 'Violão', 5),
+  ('vd5rxi67', 'ui6d39zz', 'Baixo', 6),
+  ('vd5rxi67', 'nbqns6pu', 'Teclado', 7),
+  ('vd5rxi67', 'pf91dhod', 'Bateria', 8),
+  ('vd5rxi67', 'j8b7tfq7', 'Guitarra', 9),
+  ('vd5rxi67', 'mr26846p', 'Mídia', 10),
+  ('vd5rxi67', '7q9m2i0h', 'Som', 11),
+  ('vd5rxi67', 'z2uep1en', 'Mesa de corte', 12),
+  ('vd5rxi67', 'ogz5kok1', 'Câmera 1', 13),
+  ('vd5rxi67', 'xbv932by', 'Câmera 2', 14),
+  ('1hget7my', 'z3zfkkib', 'Dirigente', 0),
+  ('1hget7my', 'j8ht9lgm', 'Vocal feminino', 1),
+  ('1hget7my', '9du7794g', 'Vocal feminino', 2),
+  ('1hget7my', 'j3j4wj99', 'Vocal feminino', 3),
+  ('1hget7my', '0ce9uvw5', 'Vocal masculino', 4),
+  ('1hget7my', 'hym4l1vf', 'Violão', 5),
+  ('1hget7my', 'h5dnsipz', 'Baixo', 6),
+  ('1hget7my', 'nbqns6pu', 'Teclado', 7),
+  ('1hget7my', 'jfljooa5', 'Bateria', 8),
+  ('1hget7my', 'j8b7tfq7', 'Guitarra', 9),
+  ('1hget7my', 'lqsaj08x', 'Piano', 10),
+  ('1hget7my', '9dpmrcg6', 'Órgão', 11),
+  ('1hget7my', '2wxfogo4', 'Mídia', 12),
+  ('1hget7my', 'mvn4a4wf', 'Som', 13),
+  ('1hget7my', 'thjxjqi3', 'Mesa de corte', 14),
+  ('1hget7my', 'ogz5kok1', 'Câmera 1', 15),
+  ('1hget7my', '6zv0mwuf', 'Câmera 2', 16),
+  ('0ec498uk', 'eh60kvj5', 'Dirigente', 0),
+  ('0ec498uk', 'j8gxbeny', 'Vocal masculino', 1),
+  ('0ec498uk', 'j8ht9lgm', 'Vocal feminino', 2),
+  ('0ec498uk', 'n2khvdga', 'Violão', 3),
+  ('0ec498uk', '06i8j76b', 'Baixo', 4),
+  ('0ec498uk', 'z3zfkkib', 'Teclado', 5),
+  ('0ec498uk', 'q80idw37', 'Bateria', 6),
+  ('0ec498uk', 'nbqns6pu', 'Guitarra', 7),
+  ('0ec498uk', 'lqsaj08x', 'Piano', 8),
+  ('0ec498uk', '9dpmrcg6', 'Órgão', 9),
+  ('0ec498uk', 'z5fk2z9r', 'Mídia', 10),
+  ('n5mtmo3o', 'zzg4zdme', 'Dirigente', 0),
+  ('n5mtmo3o', 'v7s6ehog', 'Vocal masculino', 1),
+  ('n5mtmo3o', 'i19r0wyo', 'Vocal feminino', 2),
+  ('n5mtmo3o', '3efr4edt', 'Vocal feminino', 3),
+  ('n5mtmo3o', 'ibag7i1m', 'Vocal masculino', 4),
+  ('n5mtmo3o', 'q4k7bn7x', 'Violão', 5),
+  ('n5mtmo3o', 'ui6d39zz', 'Baixo', 6),
+  ('n5mtmo3o', 'pf91dhod', 'Bateria', 7),
+  ('n5mtmo3o', 'j8b7tfq7', 'Guitarra', 8),
+  ('n5mtmo3o', 'lqsaj08x', 'Piano', 9),
+  ('n5mtmo3o', '9dpmrcg6', 'Órgão', 10),
+  ('n5mtmo3o', 'd6ncf10e', 'Mídia', 11),
+  ('n5mtmo3o', 'mvn4a4wf', 'Som', 12),
+  ('n5mtmo3o', '06i8j76b', 'Mesa de corte', 13),
+  ('n5mtmo3o', 'xbv932by', 'Câmera 1', 14),
+  ('n5mtmo3o', '6zv0mwuf', 'Câmera 2', 15),
+  ('qm2plppj', 'z3zfkkib', 'Dirigente', 0),
+  ('qm2plppj', 'pft75v2s', 'Vocal masculino', 1),
+  ('qm2plppj', 'i19r0wyo', 'Vocal feminino', 2),
+  ('qm2plppj', 'n2khvdga', 'Violão', 3),
+  ('qm2plppj', 'ui6d39zz', 'Baixo', 4),
+  ('qm2plppj', 'nbqns6pu', 'Bateria', 5),
+  ('qm2plppj', 'q4k7bn7x', 'Guitarra', 6),
+  ('qm2plppj', 'lqsaj08x', 'Piano', 7),
+  ('qm2plppj', '9dpmrcg6', 'Órgão', 8),
+  ('qm2plppj', 'mr26846p', 'Mídia', 9),
+  ('rfw0h9ny', '2sywb3wk', 'Dirigente', 0),
+  ('rfw0h9ny', 'xg9edn58', 'Vocal masculino', 1),
+  ('rfw0h9ny', '2lajlj4h', 'Vocal masculino', 2),
+  ('rfw0h9ny', '9du7794g', 'Vocal feminino', 3),
+  ('rfw0h9ny', 'z3zfkkib', 'Vocal feminino', 4),
+  ('rfw0h9ny', 'ibag7i1m', 'Vocal masculino', 5),
+  ('rfw0h9ny', 'hym4l1vf', 'Violão', 6),
+  ('rfw0h9ny', 'h5dnsipz', 'Baixo', 7),
+  ('rfw0h9ny', 'nbqns6pu', 'Teclado', 8),
+  ('rfw0h9ny', 'jfljooa5', 'Bateria', 9),
+  ('rfw0h9ny', 'j8b7tfq7', 'Guitarra', 10),
+  ('rfw0h9ny', 'lqsaj08x', 'Piano', 11),
+  ('rfw0h9ny', '9dpmrcg6', 'Órgão', 12),
+  ('rfw0h9ny', 'z5fk2z9r', 'Mídia', 13),
+  ('rfw0h9ny', 'n2khvdga', 'Som', 14),
+  ('rfw0h9ny', 'thjxjqi3', 'Mesa de corte', 15),
+  ('rfw0h9ny', 'ogz5kok1', 'Câmera 1', 16),
+  ('rfw0h9ny', 'xbv932by', 'Câmera 2', 17)
+on conflict (escala_id, membro_id, funcao) do update set ordem=excluded.ordem;
+
+insert into public.escala_repertorio (id, escala_id, musica_id, tom, momento, ordem)
+values
+  ('sqxezyex', 'pt49zhkk', 'fqrclri1', 'D', 'Louvor', 0),
+  ('1rdrgdsj', 'pt49zhkk', 'qzj865uf', 'D', 'Louvor', 1),
+  ('pr16umx1', 'pt49zhkk', 'rdl1erbf', 'A', 'Louvor', 2),
+  ('bz99nfd0', 'pt49zhkk', 'qxi6rhxo', '', 'Oferta', 3),
+  ('2is5d9ik', 'pt49zhkk', 'qa3e68f7', '', 'Batismo', 4),
+  ('40vstqqz', 'pt49zhkk', 'hkqdlmtt', 'D', 'Ceia', 5),
+  ('wt1fd4mx', 'qmevxrvc', '6mp6afqf', 'A', 'Louvor', 0),
+  ('82mux4b0', 'qmevxrvc', 'jzczbtto', 'G', 'Louvor', 1),
+  ('pzcyc3ed', 'qmevxrvc', 'ejvqtia4', '', 'Oferta', 2),
+  ('en659o2v', 'vd5rxi67', 'qfoeqh3a', 'E', 'Louvor', 0),
+  ('21i9mpfl', 'vd5rxi67', 'v90ric7p', 'D', 'Louvor', 1),
+  ('v9fupxqm', 'vd5rxi67', 'hkqdlmtt', 'D', 'Louvor', 2),
+  ('b0y07nyr', 'vd5rxi67', 'f4bs3e62', '', 'Oferta', 3),
+  ('nfrpyz21', '1hget7my', 'e4qeqpno', '', 'Abertura', 0),
+  ('tbic145a', '1hget7my', '7ns26lrw', 'E', 'Louvor', 1),
+  ('ez732pgo', '1hget7my', 'bqcab69m', 'A', 'Louvor', 2),
+  ('jj7g3f9c', '1hget7my', '64p2g158', 'A', 'Louvor', 3),
+  ('aioctiq7', '1hget7my', 'd5rgn5s7', '', 'Oferta', 4),
+  ('g43yq15i', '0ec498uk', 'f7jyu5js', 'G', 'Louvor', 0),
+  ('5latjpuu', '0ec498uk', 'jc616i76', 'G', 'Louvor', 1),
+  ('3xf6mzkp', '0ec498uk', 's333h9mt', '', 'Oferta', 2),
+  ('qoaa8t3r', 'n5mtmo3o', 'ztj0wyuh', '', 'Abertura', 0),
+  ('up47p9pb', 'n5mtmo3o', 'z6tnovmi', 'G', 'Louvor', 1),
+  ('0tdbm50f', 'n5mtmo3o', 'zwdiaeq1', 'G', 'Louvor', 2),
+  ('qo1xo5cv', 'n5mtmo3o', 'kdfy6sps', 'G', 'Louvor', 3),
+  ('0xzmas6e', 'n5mtmo3o', '55zbka52', '', 'Oferta', 4),
+  ('1geqfng0', 'qm2plppj', 'bofbcixg', 'C', 'Louvor', 0),
+  ('52loi03p', 'qm2plppj', 'y29db8p5', 'D', 'Louvor', 1),
+  ('8hssrrxq', 'qm2plppj', '35ye4scm', '', 'Oferta', 2),
+  ('qsg5lo50', 'rfw0h9ny', 'rynnefj7', '', 'Abertura', 0),
+  ('djzdnbj0', 'rfw0h9ny', 'c3lkr2aq', '', 'Louvor', 1),
+  ('ddlz2uhf', 'rfw0h9ny', 'xv9upctn', 'E', 'Louvor', 2),
+  ('kvml73ct', 'rfw0h9ny', 'wlavyf4r', 'Bb', 'Louvor', 3),
+  ('yxv2kgaf', 'rfw0h9ny', 'vauvzhma', '', 'Oferta', 4)
+on conflict (id) do update set escala_id=excluded.escala_id, musica_id=excluded.musica_id, tom=excluded.tom, momento=excluded.momento, ordem=excluded.ordem;
+
+commit;
