@@ -41,6 +41,20 @@ function nearestScale(){ const today=iso(new Date()); return [...state.db.escala
 function occurrences(type,id){ const rows=state.db.escalas.filter(e => type==="m" ? e.equipe.some(x=>x.id===id) : e.repertorio.some(x=>x.musicaId===id)).sort((a,b)=>b.data.localeCompare(a.data)); return {count:rows.length,last:rows[0]?.data}; }
 
 function groupBy(items,key){return items.reduce((map,item)=>{const value=item[key];(map[value]||=[]).push(item);return map},{})}
+function resourceName(value){return String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\.[^.]+$/,"").replace(/[^a-z0-9]+/g," ").trim()}
+function containsResourcePhrase(text,phrase){return phrase.length>=5&&` ${text} `.includes(` ${phrase} `)}
+async function attachStorageLinks(songs){
+  if(!supabase||!songs.length)return;
+  try{
+    const [pdfResult,mp3Result]=await Promise.all([
+      supabase.storage.from(SUPABASE_BUCKET).list("cifras",{limit:1000,sortBy:{column:"name",order:"asc"}}),
+      supabase.storage.from(SUPABASE_BUCKET).list("vs",{limit:1000,sortBy:{column:"name",order:"asc"}})
+    ]);
+    if(pdfResult.error||mp3Result.error)return;
+    const match=(song,files,folder)=>{const title=resourceName(song.titulo),hymnCode=resourceName(`${song.numero||""}${song.hinario||""}`).replaceAll(" ","");const candidates=(files||[]).filter(file=>{const name=resourceName(file.name),compact=name.replaceAll(" ","");return containsResourcePhrase(name,title)||containsResourcePhrase(title,name)||(hymnCode.length>=3&&compact.startsWith(hymnCode))});if(candidates.length!==1)return "";return supabase.storage.from(SUPABASE_BUCKET).getPublicUrl(`${folder}/${candidates[0].name}`).data.publicUrl};
+    songs.forEach(song=>{if(!song.cifra)song.cifra=match(song,pdfResult.data,"cifras");if(!song.vs)song.vs=match(song,mp3Result.data,"vs")});
+  }catch{}
+}
 async function loadCloudData(){
   if(!supabase)return false;
   state.cloudLoading=true;state.cloudError="";
@@ -61,7 +75,7 @@ async function loadCloudData(){
       musicas:songsResult.data.map(m=>({id:m.id,tipo:m.tipo,hinario:m.hinario||"",numero:m.numero||"",titulo:m.titulo,tom:m.tom_padrao||"",youtube:m.youtube_url||"",cifra:m.cifra_url||"",vs:m.vs_url||""})),
       escalas:scalesResult.data.map(s=>({id:s.id,data:s.data,culto:s.culto,saudacao:s.saudacao||"Olá!",ensaio:s.ensaio||"",obs:s.observacoes||"",equipe:(team[s.id]||[]).sort((a,b)=>a.ordem-b.ordem).map(x=>({id:x.membro_id,funcao:x.funcao})),repertorio:(repertoire[s.id]||[]).sort((a,b)=>a.ordem-b.ordem).map(x=>({chave:x.id,musicaId:x.musica_id,tom:x.tom||"",momento:x.momento||"Louvor"}))}))
     };
-    state.cloudReady=true;save();return true;
+    await attachStorageLinks(state.db.musicas);state.cloudReady=true;save();return true;
   }catch(error){state.cloudReady=false;state.cloudError=error?.message||"Não foi possível carregar o banco de dados.";return false}
   finally{state.cloudLoading=false}
 }
