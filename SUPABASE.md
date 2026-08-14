@@ -1,6 +1,6 @@
 # Banco de dados e arquivos no Supabase
 
-O projeto possui um esquema relacional para centralizar equipe, repertório e escalas, além de um bucket público para PDF e MP3. As tabelas exigem autenticação; os arquivos podem ser abertos por quem possuir o link.
+O projeto possui um esquema relacional para centralizar equipe, repertório e escalas, além de um bucket público para PDF e MP3. Qualquer pessoa com o link pode visualizar as escalas e abrir os arquivos; somente líderes autenticados podem alterar os dados ou enviar arquivos.
 
 ## 1. Criar as tabelas
 
@@ -17,7 +17,7 @@ Serão criadas as tabelas:
 - `escala_equipe`
 - `escala_repertorio`
 
-O script também cria relacionamentos, exclusões em cascata, índices, atualização automática de datas e políticas RLS. Usuários anônimos não têm acesso aos cadastros; usuários de **Authentication > Users** podem consultar e alterar.
+O script também cria relacionamentos, exclusões em cascata, índices, atualização automática de datas e políticas RLS. Usuários anônimos possuem somente leitura; usuários de **Authentication > Users** podem consultar e alterar.
 
 ## 2. Importar os cadastros atuais
 
@@ -29,9 +29,9 @@ Se o JSON local for alterado antes da importação, gere novamente o arquivo:
 npm run db:seed
 ```
 
-## 3. Criar o bucket e a regra de envio
+## 3. Configurar o bucket e as regras de arquivo
 
-No Supabase, abra **SQL Editor**, execute o SQL abaixo uma única vez e confirme que não existe uma política com o mesmo nome:
+O arquivo `supabase/INSTALAR-TUDO.sql` já cria ou atualiza o bucket público e suas políticas. Em um banco que já está instalado, execute somente `supabase/ATUALIZAR-ACESSO-PUBLICO.sql` para preservar os dados atuais. Se precisar executar apenas a parte do Storage, use:
 
 ```sql
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -47,25 +47,33 @@ on conflict (id) do update set
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
-create policy "Equipe autenticada envia arquivos de louvor"
+drop policy if exists "Líderes enviam arquivos de louvor" on storage.objects;
+create policy "Líderes enviam arquivos de louvor"
 on storage.objects
 for insert
 to authenticated
 with check (bucket_id = 'arquivos-louvor');
+
+drop policy if exists "Arquivos de louvor públicos para leitura" on storage.objects;
+create policy "Arquivos de louvor públicos para leitura"
+on storage.objects
+for select
+to anon
+using (bucket_id = 'arquivos-louvor');
 ```
 
 ## 4. Criar quem poderá acessar
 
-Em **Authentication > Users**, adicione um usuário com e-mail e senha. Essa conta será usada na janela de cadastro do repertório.
+Em **Authentication > Users**, adicione somente os líderes autorizados, cada um com seu e-mail e senha. Essas contas ativam os controles de edição no aplicativo.
 
 ## 5. Configurar o aplicativo
 
 Copie `.env.example` para `.env.local` e preencha a URL e a chave publicável disponíveis em **Project Settings > API**. Nunca coloque a chave `service_role` no aplicativo.
 
-Depois, reinicie `npm run dev`. Em **Repertório > Nova música**, faça login, escolha o PDF ou MP3 e salve o cadastro. O upload preenche automaticamente o link correspondente.
+Depois, reinicie `npm run dev`. Entre como líder, abra **Repertório > Nova música**, escolha o PDF ou MP3 e salve o cadastro. O upload preenche automaticamente o link público correspondente.
 
 Limites aplicados na interface: PDF até 15 MB e MP3 até 50 MB.
 
-## 6. Próxima etapa
+## 6. Conferência
 
-As tabelas e a carga inicial ficam prontas após os dois scripts SQL. O aplicativo ainda precisa trocar a persistência em `localStorage` por leitura e gravação nessas tabelas e apresentar login antes de carregar dados pessoais.
+Abra o link em uma janela anônima para validar a visualização pública. Depois, entre como líder e confirme que os botões de cadastrar, editar e excluir aparecem. Teste também um PDF e um MP3 já enviados.
